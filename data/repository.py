@@ -1,63 +1,147 @@
 import pandas as pd
+
 class ExcelVehicleDataRepository:
     def __init__(self, ev_path: str, env_path: str):
-        self.ev_data = self._load_ev_sheet(ev_path)
-        self.env_data = self._load_env_sheet(env_path)
+
+        ev_raw = pd.read_excel(
+            ev_path,
+            sheet_name="Sheet 3",
+            skiprows=8,
+            engine="openpyxl",
+        )
+        ev_raw = ev_raw.rename(
+            columns={
+                "TIME": "GEO (Codes)",
+                "TIME.1": "GEO (Labels)",
+                "Unnamed: 3": "_drop1",
+                "Unnamed: 5": "_drop2",
+                "Unnamed: 7": "_drop3",
+                "Unnamed: 9": "_drop4",
+                "Unnamed: 11": "_drop5",
+            }
+        )
+        ev_raw = ev_raw.drop(columns=["_drop1", "_drop2", "_drop3", "_drop4", "_drop5"])\
+            .iloc[1:]
+        self.ev_data = ev_raw
         self.name_to_code = {
-            row["GEO (Labels)"].strip(): row["GEO (Codes)"].strip()
+            str(row["GEO (Labels)"]).strip(): str(row["GEO (Codes)"]).strip()
             for _, row in self.ev_data.iterrows()
             if len(str(row["GEO (Codes)"]).strip()) == 2
         }
-        self.df = self._extract_records(
-            self.ev_data,
-            "GEO (Codes)",
-            {str(y): y for y in range(2018, 2023)},
-        )
-        env_years = {str(y): y for y in range(2013, 2023)}
-        self.env_data["geo"] = self.env_data["GEO (Labels)"].map(self.name_to_code)
-        self.env_df = self._extract_records(self.env_data.dropna(subset=["geo"]), "geo", env_years)
-    @staticmethod
-    def _load_sheet(path: str, sheet: str, rename: dict) -> pd.DataFrame:
-        df = pd.read_excel(path, sheet_name=sheet, skiprows=8, engine="openpyxl").iloc[1:]
-        df = df.rename(columns=rename)
-        drop_cols = [c for c in rename.values() if c.startswith("_drop")]
-        return df.drop(columns=drop_cols)
-    def _load_ev_sheet(self, path: str) -> pd.DataFrame:
-        rename = {
-            "TIME": "GEO (Codes)",
-            "TIME.1": "GEO (Labels)",
-            **{f"Unnamed: {i}": f"_drop{i//2}" for i in range(3, 12, 2)},
+
+        self.records = []
+        year_columns_ev = {
+            "2018": 2018,
+            "2019": 2019,
+            "2020": 2020,
+            "2021": 2021,
+            "2022": 2022,
         }
-        return self._load_sheet(path, "Sheet 3", rename)
-    def _load_env_sheet(self, path: str) -> pd.DataFrame:
-        rename = {"TIME": "GEO (Labels)"}
-        rename.update({f"Unnamed: {i}": f"_drop{i//2 - 1}" for i in range(2, 21, 2)})
-        return self._load_sheet(path, "Sheet 1", rename)
-    @staticmethod
-    def _extract_records(df: pd.DataFrame, code_col: str, years: dict) -> pd.DataFrame:
-        long_df = df.melt(id_vars=[code_col], value_vars=years.keys(), var_name="TIME_PERIOD", value_name="OBS_VALUE")
-        long_df["TIME_PERIOD"] = long_df["TIME_PERIOD"].map(years)
-        long_df[code_col] = long_df[code_col].astype(str).str.strip()
-        long_df = long_df.dropna(subset=["OBS_VALUE"])
-        long_df["OBS_VALUE"] = pd.to_numeric(long_df["OBS_VALUE"], errors="coerce")
-        long_df = long_df.dropna(subset=["OBS_VALUE"])
-        long_df.rename(columns={code_col: "geo"}, inplace=True)
-        return long_df[["geo", "TIME_PERIOD", "OBS_VALUE"]]
+
+        for _, row in self.ev_data.iterrows():
+            geo = str(row["GEO (Codes)"]).strip()
+            if len(geo) == 2:
+                for col_name, year in year_columns_ev.items():
+                    val = row.get(col_name)
+                    if pd.notna(val):
+                        try:
+                            numeric_val = float(val)
+                            self.records.append({
+                                "geo": geo,
+                                "TIME_PERIOD": year,
+                                "OBS_VALUE": numeric_val
+                            })
+                        except Exception:
+                            continue
+
+        self.df = pd.DataFrame(self.records)
+
+        env_raw = pd.read_excel(
+            env_path,
+            sheet_name="Sheet 1",
+            skiprows=8,
+            engine="openpyxl",
+        )
+        env_raw = env_raw.rename(
+            columns={
+                "TIME": "GEO (Labels)",
+                "Unnamed: 2": "_drop1",
+                "Unnamed: 4": "_drop2",
+                "Unnamed: 6": "_drop3",
+                "Unnamed: 8": "_drop4",
+                "Unnamed: 10": "_drop5",
+                "Unnamed: 12": "_drop6",
+                "Unnamed: 14": "_drop7",
+                "Unnamed: 16": "_drop8",
+                "Unnamed: 18": "_drop9",
+                "Unnamed: 20": "_drop10",
+            }
+        )
+        env_raw = env_raw.drop(columns=[
+            "_drop1",
+            "_drop2",
+            "_drop3",
+            "_drop4",
+            "_drop5",
+            "_drop6",
+            "_drop7",
+            "_drop8",
+            "_drop9",
+            "_drop10",
+        ]).iloc[1:]
+        self.env_data = env_raw
+
+        self.env_records = []
+        year_columns_env = {
+            "2013": 2013,
+            "2014": 2014,
+            "2015": 2015,
+            "2016": 2016,
+            "2017": 2017,
+            "2018": 2018,
+            "2019": 2019,
+            "2020": 2020,
+            "2021": 2021,
+            "2022": 2022,
+        }
+
+        for _, row in self.env_data.iterrows():
+            label = str(row["GEO (Labels)"]).strip()
+            geo = self.name_to_code.get(label)
+            if geo:
+                for col_name, year in year_columns_env.items():
+                    val = row.get(col_name)
+                    if pd.notna(val):
+                        try:
+                            numeric_val = float(val)
+                            self.env_records.append({
+                                "geo": geo,
+                                "TIME_PERIOD": year,
+                                "OBS_VALUE": numeric_val,
+                            })
+                        except Exception:
+                            continue
+
+        self.env_df = pd.DataFrame(self.env_records)
+
     def get_all_countries(self):
         countries = self.df["geo"].dropna().unique()
         return sorted(set(countries))
+
     def get_available_years(self):
         return sorted(self.df["TIME_PERIOD"].unique())
+
     def get_vehicle_data(self, country: str, year: int):
         return self.get_ev_share_data(country, year)
+
     def get_ev_share_data(self, country: str, year: int):
         row = self.df[(self.df["geo"] == country) & (self.df["TIME_PERIOD"] == year)]
         if not row.empty:
             return row.iloc[0]["OBS_VALUE"]
         return None
+
     def get_env_data(self, country: str, year: int):
         row = self.env_df[(self.env_df["geo"] == country) & (self.env_df["TIME_PERIOD"] == year)]
         if not row.empty:
             return row.iloc[0]["OBS_VALUE"]
         return None
-
