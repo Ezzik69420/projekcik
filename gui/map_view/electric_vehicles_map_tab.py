@@ -177,6 +177,9 @@ class ElectricVehiclesMapTab(QWidget):
             .rename(columns={"value": "cumulative_ev"})
         )
 
+        region_names = df_range[["geo", "name"]].drop_duplicates(subset="geo")
+        cum_ev = cum_ev.merge(region_names, on="geo", how="left")
+
         merged = self.map_data.merge(cum_ev, on="geo", how="left")
         if self.region_mode == "PL":
             merged = merged[merged["geo"].str.startswith("PL")]
@@ -191,7 +194,7 @@ class ElectricVehiclesMapTab(QWidget):
             locations=merged["geo"],
             z=merged["cumulative_ev"],
             featureidkey="properties.geo",
-            text=merged["geo"],
+            text=merged["name"],
             colorscale="Viridis",
             marker_line_width=0.5,
             colorbar=dict(
@@ -201,6 +204,7 @@ class ElectricVehiclesMapTab(QWidget):
                 thickness=15
             )
         ))
+        fig.update_traces(hovertemplate="%{text}<br>%{z}<extra></extra>")
 
         if self.region_mode == "PL":
             minx, miny, maxx, maxy = merged.geometry.total_bounds

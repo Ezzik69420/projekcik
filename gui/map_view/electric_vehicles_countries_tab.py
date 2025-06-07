@@ -203,7 +203,7 @@ class ElectricVehiclesCountriesTab(QWidget):
             locations=merged["geo"],
             z=merged["cumulative_env"],
             featureidkey="properties.geo",
-            text=merged["name_x"] if "name_x" in merged.columns else merged["geo"],
+            text=merged["name"],
             colorscale="RdPu",
             marker_line_width=0.5,
             colorbar=dict(
@@ -213,6 +213,7 @@ class ElectricVehiclesCountriesTab(QWidget):
                 thickness=15
             )
         ))
+        fig.update_traces(hovertemplate="%{text}<br>%{z}<extra></extra>")
 
         fig.update_geos(
             projection_type="mercator",
