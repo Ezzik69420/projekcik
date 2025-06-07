@@ -1,4 +1,4 @@
-# gui/map_view/electric_vehicles_countries_tab.py
+                                                 
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSlider
 from PyQt5.QtCore import Qt
@@ -47,22 +47,22 @@ class ElectricVehiclesCountriesTab(QWidget):
             "Cyprus": "CY",
         }
 
-        # 1) Wczytujemy dane EV z Excela i dostępne lata
+                                                        
         self.env_data = self.load_env_data(data_path)
         self.years = sorted(self.env_data["year"].unique())
         self.start_year = self.years[0]
         self.end_year = self.years[-1]
 
-        # 2) Wczytujemy geometrię krajów (poziom 0)
+                                                   
         self.map_data = self.load_map_data()
 
-        # ------------------------
-        # Przygotowanie interfejsu Qt
-        # ------------------------
+                                  
+                                     
+                                  
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        # --- Suwaki „Od roku” / „Do roku” ---
+                                              
         sliders_layout = QHBoxLayout()
 
         self.label_start = QLabel(f"Od roku: {self.start_year}")
@@ -90,12 +90,12 @@ class ElectricVehiclesCountriesTab(QWidget):
         sliders_layout.addWidget(self.slider_end)
         self.layout.addLayout(sliders_layout)
 
-        # --- Widok mapy w HTML ---
+                                   
         self.web_view = QWebEngineView()
         self.web_view.setMinimumSize(1200, 800)
         self.layout.addWidget(self.web_view)
 
-        # Rysujemy mapę od razu
+                               
         self.render_map()
 
     def on_start_changed(self, index: int):
@@ -175,13 +175,13 @@ class ElectricVehiclesCountriesTab(QWidget):
         return gdf.rename(columns={"CNTR_CODE": "geo", "NAME_LATN": "name"})
 
     def render_map(self):
-        # 1) filtrujemy EV w zakresie [start_year, end_year]
+                                                            
         df_range = self.env_data[
             (self.env_data["year"] >= self.start_year) &
             (self.env_data["year"] <= self.end_year)
         ]
 
-        # 2) grupujemy po 'geo' i sumujemy 'value'
+                                                  
         cum_env = (
             df_range
             .groupby("geo", as_index=False)["value"]
@@ -189,14 +189,14 @@ class ElectricVehiclesCountriesTab(QWidget):
             .rename(columns={"value": "cumulative_env"})
         )
 
-        # 3) łączymy z geometrią krajów
+                                       
         merged = self.map_data.merge(cum_env, on="geo", how="left")
         merged = merged[merged["cumulative_env"].notna()]
 
         if merged.empty or merged.geometry.isnull().all():
             return
 
-        # 4) rysujemy choropleth
+                                
         geojson = json.loads(merged.to_json())
         fig = go.Figure(go.Choropleth(
             geojson=geojson,

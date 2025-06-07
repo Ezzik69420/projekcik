@@ -16,7 +16,7 @@ class YearSlider(QWidget):
             self.slider.setMinimum(0)
             self.slider.setMaximum(len(self.years) - 1)
 
-            # domyślnie ustawiamy na 2022 jeśli dostępny
+                                                        
             default_year = 2022 if 2022 in self.years else self.years[0]
             default_index = self.years.index(default_year)
             self.slider.setValue(default_index)

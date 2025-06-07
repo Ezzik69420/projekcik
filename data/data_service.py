@@ -1,4 +1,4 @@
-# data/data_service.py
+                      
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
@@ -10,7 +10,7 @@ class VehicleDataService(QObject):
         super().__init__()
         self.repository = repository
         self.selected_year = None
-        self.data_mode = "TOTAL"  # lub "EV"
+        self.data_mode = "TOTAL"            
 
     def set_year(self, year):
         self.selected_year = year
@@ -37,10 +37,10 @@ class VehicleDataService(QObject):
             return None
 
         if self.data_mode == "TOTAL":
-            # Repository zwraca skumulowaną sumę dla TOTAL
+                                                          
             return self.repository.get_vehicle_data(country, self.selected_year)
         elif self.data_mode == "EV":
-            # Sumujemy EV od najwcześniejszego roku do selected_year
+                                                                    
             years = self.repository.get_available_years()
             years_to_sum = [y for y in years if y <= self.selected_year]
             total_ev = 0
@@ -93,6 +93,6 @@ class VehicleDataService(QObject):
             "SI": "Słowenia",
             "SK": "Słowacja",
             "UK": "Wielka Brytania",
-            # Dodaj pozostałe kody, jeżeli się pojawiają w danych:
-            # "X1": "Nazwa Kraju X1", itd.
+                                                                  
+                                          
         }

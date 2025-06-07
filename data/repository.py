@@ -2,10 +2,10 @@ import pandas as pd
 
 class ExcelVehicleDataRepository:
     def __init__(self, ev_path: str, env_path: str):
-        # 1. EV data (tran_r_elvehst...)
-        # Wczytujemy dane EV. W arkuszu po ośmiu wierszach znajdują się nazwy
-        # kolumn z latami (2018, 2019, ...). Kolejny wiersz powtarza nagłówki
-        # "GEO (Codes)", dlatego pomijamy go przy wczytywaniu.
+                                        
+                                                                             
+                                                                             
+                                                              
         ev_raw = pd.read_excel(
             ev_path,
             sheet_name="Sheet 3",
@@ -60,9 +60,9 @@ class ExcelVehicleDataRepository:
 
         self.df = pd.DataFrame(self.records)
 
-        # 2. ENV data (env_waselvt...)
-        # Dane ENV mają podobną strukturę – po ośmiu wierszach znajdują się
-        # kolumny z latami, a pierwszy wiersz po nagłówku należy pominąć.
+                                      
+                                                                           
+                                                                         
         env_raw = pd.read_excel(
             env_path,
             sheet_name="Sheet 1",

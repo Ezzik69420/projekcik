@@ -17,35 +17,35 @@ class ChartView(QWidget):
         super().__init__()
         self.service = service
 
-        # -------------------------------------------------------
-        # 1) Pobieramy pełny DataFrame z repozytorium:
-        #    kolumny: ["geo", "TIME_PERIOD", "OBS_VALUE"]
-        # -------------------------------------------------------
+                                                                 
+                                                      
+                                                         
+                                                                 
         self.repo_df = self.service.repository.df.copy()
 
-        # -------------------------------------------------------
-        # 2) Wyciągamy unikalne lata i ustawiamy domyślny zakres:
-        #    od pierwszego do ostatniego roku.
-        # -------------------------------------------------------
+                                                                 
+                                                                 
+                                              
+                                                                 
         self.years = sorted(self.repo_df["TIME_PERIOD"].unique())
         self.start_year = self.years[0]
         self.end_year = self.years[-1]
 
-        # -------------------------------------------------------
-        # 3) Lista aktualnie zaznaczonych krajów (na początku pusta)
-        # -------------------------------------------------------
+                                                                 
+                                                                    
+                                                                 
         self.selected_countries = []
 
-        # -------------------------------------------------------
-        # 4) Budujemy układ Qt: suwaki, lista krajów, miejsce na wykres
-        # -------------------------------------------------------
+                                                                 
+                                                                       
+                                                                 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        # 4.1) Suwaki „Od roku” / „Do roku”
+                                           
         sliders_layout = QHBoxLayout()
 
-        # Suwak początkowego roku
+                                 
         self.label_start = QLabel(f"Od roku: {self.start_year}")
         self.slider_start = QSlider(Qt.Horizontal)
         self.slider_start.setMinimum(0)
@@ -55,7 +55,7 @@ class ChartView(QWidget):
         self.slider_start.setTickPosition(QSlider.TicksBelow)
         self.slider_start.valueChanged.connect(self.on_start_changed)
 
-        # Suwak końcowego roku
+                              
         self.label_end = QLabel(f"Do roku: {self.end_year}")
         self.slider_end = QSlider(Qt.Horizontal)
         self.slider_end.setMinimum(0)
@@ -72,25 +72,25 @@ class ChartView(QWidget):
         sliders_layout.addWidget(self.slider_end)
         self.layout.addLayout(sliders_layout)
 
-        # 4.2) Lista krajów (CountryListWidget)
+                                               
         self.country_list_widget = CountryListWidget(self.service)
         self.country_list_widget.countriesSelected.connect(self.update_countries)
         self.layout.addWidget(self.country_list_widget)
 
-        # 4.3) Miejsce na wykres Matplotlib
+                                           
         self.figure = Figure(figsize=(8, 5))
         self.canvas = FigureCanvas(self.figure)
         self.layout.addWidget(self.canvas)
 
-        # -------------------------------------------------------
-        # 5) Podłączamy sygnał, by reagować na ewentualną zmianę
-        #    (np. tryb EV/TOTAL lub inna aktualizacja danych).
-        # -------------------------------------------------------
+                                                                 
+                                                                
+                                                              
+                                                                 
         self.service.dataUpdated.connect(self.redraw_chart)
 
-        # -------------------------------------------------------
-        # 6) Rysujemy wykres po raz pierwszy (np. komunikat o braku krajów).
-        # -------------------------------------------------------
+                                                                 
+                                                                            
+                                                                 
         self.redraw_chart()
 
     def on_start_changed(self, index: int):
@@ -142,9 +142,9 @@ class ChartView(QWidget):
         Całość jest owinięta w try/except, aby ewentualne błędy nie zamknęły aplikacji.
         """
         try:
-            # -------------------------------------------------------
-            # 1) Sprawdzenie: czy wybrano jakiekolwiek kraje?
-            # -------------------------------------------------------
+                                                                     
+                                                             
+                                                                     
             if not self.selected_countries:
                 self.figure.clear()
                 ax = self.figure.add_subplot(111)
@@ -158,10 +158,10 @@ class ChartView(QWidget):
                 self.canvas.draw()
                 return
 
-            # -------------------------------------------------------
-            # 2) Filtrujemy repo_df: TIME_PERIOD ∈ [start_year, end_year],
-            #    geo ∈ selected_countries
-            # -------------------------------------------------------
+                                                                     
+                                                                          
+                                         
+                                                                     
             mask = (
                 (self.repo_df["TIME_PERIOD"] >= self.start_year) &
                 (self.repo_df["TIME_PERIOD"] <= self.end_year) &
@@ -169,9 +169,9 @@ class ChartView(QWidget):
             )
             df_range = self.repo_df[mask]
 
-            # -------------------------------------------------------
-            # 3) Grupujemy po 'geo' i sumujemy 'OBS_VALUE'
-            # -------------------------------------------------------
+                                                                     
+                                                          
+                                                                     
             cum_df = (
                 df_range
                 .groupby("geo", as_index=False)["OBS_VALUE"]
@@ -179,9 +179,9 @@ class ChartView(QWidget):
                 .rename(columns={"OBS_VALUE": "cumulative_value"})
             )
 
-            # -------------------------------------------------------
-            # 4) Jeśli cum_df jest pusty → komunikat i return
-            # -------------------------------------------------------
+                                                                     
+                                                             
+                                                                     
             if cum_df.empty:
                 self.figure.clear()
                 ax = self.figure.add_subplot(111)
@@ -195,12 +195,12 @@ class ChartView(QWidget):
                 self.canvas.draw()
                 return
 
-            # -------------------------------------------------------
-            # 5) Dodajemy brakujące kraje (wartość 0) → sortujemy alfabetycznie
-            # -------------------------------------------------------
+                                                                     
+                                                                               
+                                                                     
             missing = set(self.selected_countries) - set(cum_df["geo"])
             if missing:
-                # Tworzymy nowy DataFrame tylko z brakującymi wierszami
+                                                                       
                 rows = [{"geo": geo_code, "cumulative_value": 0} for geo_code in missing]
                 missing_df = pd.DataFrame(rows, columns=["geo", "cumulative_value"])
                 cum_df = pd.concat([cum_df, missing_df], ignore_index=True)
@@ -209,9 +209,9 @@ class ChartView(QWidget):
 
             country_codes = cum_df["geo"].tolist()
 
-            # -------------------------------------------------------
-            # 6) Konwersja wszystkich wartości na float (zabezpieczenie)
-            # -------------------------------------------------------
+                                                                     
+                                                                        
+                                                                     
             values = []
             for x in cum_df["cumulative_value"].tolist():
                 try:
@@ -220,9 +220,9 @@ class ChartView(QWidget):
                     f = 0.0
                 values.append(f)
 
-            # -------------------------------------------------------
-            # 7) Rysujemy wykres słupkowy
-            # -------------------------------------------------------
+                                                                     
+                                         
+                                                                     
             self.figure.clear()
             ax = self.figure.add_subplot(111)
 
@@ -252,20 +252,20 @@ class ChartView(QWidget):
             ax.tick_params(axis='x', labelrotation=45)
             ax.ticklabel_format(style='plain', axis='y')
 
-            # -------------------------------------------------------
-            # 8) Przydzielamy więcej miejsca na dole, żeby zmieścić legendę
-            # -------------------------------------------------------
+                                                                     
+                                                                           
+                                                                     
             self.figure.subplots_adjust(bottom=0.28)
 
-            # -------------------------------------------------------
-            # 9) Budujemy legendę pod wykresem: kod – pełna nazwa
-            # -------------------------------------------------------
+                                                                     
+                                                                 
+                                                                     
             country_names_dict = self.service.get_country_names()
             legend_entries = [
                 f"{code} – {country_names_dict.get(code, code)}"
                 for code in country_codes
             ]
-            # Maksymalnie 4 elementy w jednym wierszu
+                                                     
             n_per_row = 4
             lines = [
                 ", ".join(legend_entries[i:i + n_per_row])
@@ -273,18 +273,18 @@ class ChartView(QWidget):
             ]
             legend_text = "\n".join(lines)
 
-            # Umieszczamy legendę w obszarze figury poniżej osi X:
+                                                                  
             self.figure.text(
-                0.5, 0.08,  # x=0.5 (środek), y=0.08 (nieco nad dolną krawędzią)
+                0.5, 0.08,                                                      
                 legend_text,
                 ha='center',
                 va='top',
                 fontsize=8
             )
 
-            # -------------------------------------------------------
-            # 10) Rysujemy wszystko na kanwie
-            # -------------------------------------------------------
+                                                                     
+                                             
+                                                                     
             self.canvas.draw()
 
         except Exception as e:
