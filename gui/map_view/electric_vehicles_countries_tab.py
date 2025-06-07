@@ -8,9 +8,11 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import json
 import tempfile
+
 class ElectricVehiclesCountriesTab(QWidget):
     def __init__(self, data_path: str):
         super().__init__()
+
         self.country_name_to_code = {
             "Germany": "DE",
             "France": "FR",
@@ -42,14 +44,19 @@ class ElectricVehiclesCountriesTab(QWidget):
             "Iceland": "IS",
             "Cyprus": "CY",
         }
+
         self.env_data = self.load_env_data(data_path)
         self.years = sorted(self.env_data["year"].unique())
         self.start_year = self.years[0]
         self.end_year = self.years[-1]
+
         self.map_data = self.load_map_data()
+
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
+
         sliders_layout = QHBoxLayout()
+
         self.label_start = QLabel(f"Od roku: {self.start_year}")
         self.slider_start = QSlider(Qt.Horizontal)
         self.slider_start.setMinimum(0)
@@ -58,6 +65,7 @@ class ElectricVehiclesCountriesTab(QWidget):
         self.slider_start.setTickInterval(1)
         self.slider_start.setTickPosition(QSlider.TicksBelow)
         self.slider_start.valueChanged.connect(self.on_start_changed)
+
         self.label_end = QLabel(f"Do roku: {self.end_year}")
         self.slider_end = QSlider(Qt.Horizontal)
         self.slider_end.setMinimum(0)
@@ -66,16 +74,20 @@ class ElectricVehiclesCountriesTab(QWidget):
         self.slider_end.setTickInterval(1)
         self.slider_end.setTickPosition(QSlider.TicksBelow)
         self.slider_end.valueChanged.connect(self.on_end_changed)
+
         sliders_layout.addWidget(self.label_start)
         sliders_layout.addWidget(self.slider_start)
         sliders_layout.addSpacing(20)
         sliders_layout.addWidget(self.label_end)
         sliders_layout.addWidget(self.slider_end)
         self.layout.addLayout(sliders_layout)
+
         self.web_view = QWebEngineView()
         self.web_view.setMinimumSize(1200, 800)
         self.layout.addWidget(self.web_view)
+
         self.render_map()
+
     def on_start_changed(self, index: int):
         year = self.years[index]
         if year > self.end_year:
@@ -84,6 +96,7 @@ class ElectricVehiclesCountriesTab(QWidget):
         self.start_year = year
         self.label_start.setText(f"Od roku: {self.start_year}")
         self.render_map()
+
     def on_end_changed(self, index: int):
         year = self.years[index]
         if year < self.start_year:
@@ -92,6 +105,7 @@ class ElectricVehiclesCountriesTab(QWidget):
         self.end_year = year
         self.label_end.setText(f"Do roku: {self.end_year}")
         self.render_map()
+
     def load_env_data(self, data_path: str) -> pd.DataFrame:
         df_raw = (
             pd.read_excel(
@@ -102,6 +116,7 @@ class ElectricVehiclesCountriesTab(QWidget):
             )
             .iloc[1:]
         )
+
         year_columns = {
             "2013": 2013,
             "2014": 2014,
@@ -130,12 +145,15 @@ class ElectricVehiclesCountriesTab(QWidget):
                         "value": val
                     })
         return pd.DataFrame(records)
+
     def load_map_data(self) -> gpd.GeoDataFrame:
         gdf = gpd.read_file("data/NUTS_RG_01M_2021_4326.geojson")
         gdf = gdf[gdf["LEVL_CODE"] == 0]
         gdf = gdf[["CNTR_CODE", "NAME_LATN", "geometry"]].copy()
         return gdf.rename(columns={"CNTR_CODE": "geo", "NAME_LATN": "name"})
+
     def render_map(self):
+                                                            
         df_range = self.env_data[
             (self.env_data["year"] >= self.start_year) &
             (self.env_data["year"] <= self.end_year)
@@ -148,8 +166,10 @@ class ElectricVehiclesCountriesTab(QWidget):
         )
         merged = self.map_data.merge(cum_env, on="geo", how="left")
         merged = merged[merged["cumulative_env"].notna()]
+
         if merged.empty or merged.geometry.isnull().all():
             return
+
         geojson = json.loads(merged.to_json())
         fig = go.Figure(go.Choropleth(
             geojson=geojson,
@@ -167,6 +187,7 @@ class ElectricVehiclesCountriesTab(QWidget):
             )
         ))
         fig.update_traces(hovertemplate="%{text}<br>%{z}<extra></extra>")
+
         fig.update_geos(
             projection_type="mercator",
             fitbounds="locations",
@@ -174,12 +195,14 @@ class ElectricVehiclesCountriesTab(QWidget):
             lonaxis_range=[-25, 45],
             visible=True
         )
+
         fig.update_layout(
             title=f"Pojazdy elektryczne – Europa ({self.start_year}–{self.end_year})",
             margin={"r": 0, "t": 50, "l": 0, "b": 0},
             height=800,
             width=1200
         )
+
         html_file = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
         pio.write_html(fig, file=html_file.name, full_html=True, include_plotlyjs="cdn")
         self.web_view.load(QUrl.fromLocalFile(html_file.name))
