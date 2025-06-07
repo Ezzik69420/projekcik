@@ -224,5 +224,5 @@ class ElectricVehiclesCountriesTab(QWidget):
             width=1200
         )
 
-        html = pio.to_html(fig, full_html=False, include_plotlyjs="cdn")
+        html = pio.to_html(fig, full_html=True, include_plotlyjs="cdn")
         self.web_view.setHtml(html, QUrl(""))
