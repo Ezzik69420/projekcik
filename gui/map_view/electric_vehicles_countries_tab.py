@@ -1,15 +1,13 @@
 # gui/map_view/electric_vehicles_countries_tab.py
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSlider
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtCore import QUrl
 import pandas as pd
 import geopandas as gpd
 import plotly.graph_objects as go
 import plotly.io as pio
 import json
-import tempfile
 
 class ElectricVehiclesCountriesTab(QWidget):
     def __init__(self, data_path: str):
@@ -53,8 +51,12 @@ class ElectricVehiclesCountriesTab(QWidget):
         self.start_year = self.years[0]
         self.end_year = self.years[-1]
 
-        # 2) Wczytujemy geometrię krajów (poziom 0)
+        # 2) Wczytujemy geometrię krajów (poziom 0) i przygotowujemy geojson
+        #    z ograniczeniem tylko do dostępnych w danych państw, aby
+        #    uniknąć ponownej konwersji przy każdym odświeżeniu mapy.
         self.map_data = self.load_map_data()
+        self.map_data = self.map_data[self.map_data["geo"].isin(self.env_data["geo"].unique())]
+        self.map_geojson = json.loads(self.map_data.to_json())
 
         # ------------------------
         # Przygotowanie interfejsu Qt
@@ -72,7 +74,10 @@ class ElectricVehiclesCountriesTab(QWidget):
         self.slider_start.setValue(0)
         self.slider_start.setTickInterval(1)
         self.slider_start.setTickPosition(QSlider.TicksBelow)
+        # Aktualizujemy etykiety podczas przesuwania, a mapę
+        # odświeżamy dopiero po puszczeniu suwaka.
         self.slider_start.valueChanged.connect(self.on_start_changed)
+        self.slider_start.sliderReleased.connect(self.render_map)
 
         self.label_end = QLabel(f"Do roku: {self.end_year}")
         self.slider_end = QSlider(Qt.Horizontal)
@@ -82,6 +87,7 @@ class ElectricVehiclesCountriesTab(QWidget):
         self.slider_end.setTickInterval(1)
         self.slider_end.setTickPosition(QSlider.TicksBelow)
         self.slider_end.valueChanged.connect(self.on_end_changed)
+        self.slider_end.sliderReleased.connect(self.render_map)
 
         sliders_layout.addWidget(self.label_start)
         sliders_layout.addWidget(self.slider_start)
@@ -95,7 +101,7 @@ class ElectricVehiclesCountriesTab(QWidget):
         self.web_view.setMinimumSize(1200, 800)
         self.layout.addWidget(self.web_view)
 
-        # Rysujemy mapę od razu
+        # Rysujemy mapę po raz pierwszy
         self.render_map()
 
     def on_start_changed(self, index: int):
@@ -105,7 +111,6 @@ class ElectricVehiclesCountriesTab(QWidget):
             return
         self.start_year = year
         self.label_start.setText(f"Od roku: {self.start_year}")
-        self.render_map()
 
     def on_end_changed(self, index: int):
         year = self.years[index]
@@ -114,7 +119,6 @@ class ElectricVehiclesCountriesTab(QWidget):
             return
         self.end_year = year
         self.label_end.setText(f"Do roku: {self.end_year}")
-        self.render_map()
 
     def load_env_data(self, data_path: str) -> pd.DataFrame:
         """
@@ -186,21 +190,15 @@ class ElectricVehiclesCountriesTab(QWidget):
             .rename(columns={"value": "cumulative_env"})
         )
 
-        # 3) łączymy z geometrią krajów
-        merged = self.map_data.merge(cum_env, on="geo", how="left")
-        merged = merged[merged["cumulative_env"].notna()]
-
-        if merged.empty or merged.geometry.isnull().all():
+        if cum_env.empty:
             return
 
-        # 4) rysujemy choropleth
-        geojson = json.loads(merged.to_json())
         fig = go.Figure(go.Choropleth(
-            geojson=geojson,
-            locations=merged["geo"],
-            z=merged["cumulative_env"],
+            geojson=self.map_geojson,
+            locations=cum_env["geo"],
+            z=cum_env["cumulative_env"],
             featureidkey="properties.geo",
-            text=merged["name_x"] if "name_x" in merged.columns else merged["geo"],
+            text=cum_env["geo"],
             colorscale="RdPu",
             marker_line_width=0.5,
             colorbar=dict(
@@ -226,6 +224,5 @@ class ElectricVehiclesCountriesTab(QWidget):
             width=1200
         )
 
-        html_file = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
-        pio.write_html(fig, file=html_file.name, full_html=True, include_plotlyjs="cdn")
-        self.web_view.load(QUrl.fromLocalFile(html_file.name))
+        html = pio.to_html(fig, full_html=False, include_plotlyjs="cdn")
+        self.web_view.setHtml(html, QUrl(""))
