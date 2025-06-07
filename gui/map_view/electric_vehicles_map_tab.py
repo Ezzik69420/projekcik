@@ -103,7 +103,12 @@ class ElectricVehiclesMapTab(QWidget):
         """
 
         df_raw = (
-            pd.read_excel(data_path, sheet_name="Sheet 3", skiprows=8, engine="openpyxl")
+            pd.read_excel(
+                data_path,
+                sheet_name="Sheet 4",  # dane procentowe
+                skiprows=8,
+                engine="openpyxl",
+            )
             .iloc[1:]
         )
 
@@ -170,20 +175,20 @@ class ElectricVehiclesMapTab(QWidget):
             (self.ev_data["year"] <= self.end_year)
         ]
 
-        cum_ev = (
+        avg_share = (
             df_range
             .groupby("geo", as_index=False)["value"]
-            .sum()
-            .rename(columns={"value": "cumulative_ev"})
+            .mean()
+            .rename(columns={"value": "avg_share"})
         )
 
         region_names = df_range[["geo", "name"]].drop_duplicates(subset="geo")
-        cum_ev = cum_ev.merge(region_names, on="geo", how="left")
+        avg_share = avg_share.merge(region_names, on="geo", how="left")
 
-        merged = self.map_data.merge(cum_ev, on="geo", how="left")
+        merged = self.map_data.merge(avg_share, on="geo", how="left")
         if self.region_mode == "PL":
             merged = merged[merged["geo"].str.startswith("PL")]
-        merged = merged[merged["cumulative_ev"].notna()]
+        merged = merged[merged["avg_share"].notna()]
 
         if merged.empty or merged.geometry.isnull().all():
             return
@@ -192,13 +197,13 @@ class ElectricVehiclesMapTab(QWidget):
         fig = go.Figure(go.Choropleth(
             geojson=geojson,
             locations=merged["geo"],
-            z=merged["cumulative_ev"],
+            z=merged["avg_share"],
             featureidkey="properties.geo",
             text=merged["name"],
             colorscale="Viridis",
             marker_line_width=0.5,
             colorbar=dict(
-                title=f"Suma ({self.start_year}–{self.end_year})",
+                title=f"Średni udział ({self.start_year}–{self.end_year})",
                 x=1.02,
                 len=0.75,
                 thickness=15
@@ -229,7 +234,7 @@ class ElectricVehiclesMapTab(QWidget):
 
         title_region = "Polska" if self.region_mode == "PL" else "Regiony NUTS2"
         fig.update_layout(
-            title=f"Pojazdy elektryczne – {title_region} ({self.start_year}–{self.end_year})",
+            title=f"Udział pojazdów elektrycznych – {title_region} ({self.start_year}–{self.end_year})",
             margin={"r": 0, "t": 50, "l": 0, "b": 0},
             height=800,
             width=1200
