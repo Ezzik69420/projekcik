@@ -84,20 +84,31 @@ class ElectricVehiclesMapTab(QWidget):
         self.render_map()
 
     def load_ev_data(self, data_path: str) -> pd.DataFrame:
-        df_raw = pd.read_excel(data_path, sheet_name="Sheet 3", skiprows=9, engine="openpyxl")
+        """Wczytuje arkusz z danymi EV i zwraca dane w formie DataFrame.
+
+        Plik zawiera osiem wierszy nagłówkowych opisujących zestaw danych.
+        Następny wiersz zawiera nazwy kolumn (``TIME`` z kodem regionu,
+        ``TIME.1`` z nazwą oraz kolumny lat od 2018 do 2022). Wiersz
+        bezpośrednio po nagłówku powtarza te kolumny i jest pomijany.
+        """
+
+        df_raw = (
+            pd.read_excel(data_path, sheet_name="Sheet 3", skiprows=8, engine="openpyxl")
+            .iloc[1:]
+        )
 
         year_columns = {
-            "Unnamed: 1": 2018,
-            "Unnamed: 2": 2019,
-            "Unnamed: 3": 2020,
-            "Unnamed: 4": 2021,
-            "Unnamed: 5": 2022
+            "2018": 2018,
+            "2019": 2019,
+            "2020": 2020,
+            "2021": 2021,
+            "2022": 2022,
         }
 
         records = []
         for _, row in df_raw.iterrows():
-            geo = str(row["GEO (Codes)"]).strip()
-            name = str(row["GEO (Labels)"]).strip()
+            geo = str(row["TIME"]).strip()
+            name = str(row["TIME.1"]).strip()
             # Bierzemy tylko kraje (kod długości 2, np. "PL", "DE" itd.)
             for col_name, rok in year_columns.items():
                 val = row.get(col_name)

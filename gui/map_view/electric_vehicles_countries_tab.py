@@ -118,35 +118,38 @@ class ElectricVehiclesCountriesTab(QWidget):
 
     def load_env_data(self, data_path: str) -> pd.DataFrame:
         """
-        Wczytuje plik Excel z danymi EV:
-        - skiprows=9 (header: "GEO (Codes)", "GEO (Labels)", "Unnamed: 2"..."Unnamed: 10")
-        - "GEO (Codes)" – kod kraju (np. "PL", "DE"), "GEO (Labels)" – nazwa kraju
-        - "Unnamed: 2" → 2018, "Unnamed: 4" → 2019, ..., "Unnamed: 10" → 2022
-        Zwraca DataFrame ["geo","name","year","value"].
+        Wczytuje plik Excel z danymi ENV.
+        Pierwszych osiem wierszy zawiera opis, kolejne wiersze zaczynają się od
+        kolumny "TIME" z nazwą kraju oraz kolumn z latami (2013–2022). Pierwszy
+        wiersz po nagłówku powtarza opisy i jest pomijany.
+        Zwraca DataFrame z kolumnami: ``geo``, ``name``, ``year`` i ``value``.
         """
-        df_raw = pd.read_excel(
-            data_path,
-            sheet_name="Sheet 1",
-            skiprows=9,
-            engine="openpyxl"
+        df_raw = (
+            pd.read_excel(
+                data_path,
+                sheet_name="Sheet 1",
+                skiprows=8,
+                engine="openpyxl",
+            )
+            .iloc[1:]
         )
 
         year_columns = {
-            "Unnamed: 1": 2013,
-            "Unnamed: 2": 2014,
-            "Unnamed: 3": 2015,
-            "Unnamed: 4": 2016,
-            "Unnamed: 5": 2017,
-            "Unnamed: 6": 2018,
-            "Unnamed: 7": 2019,
-            "Unnamed: 8": 2020,
-            "Unnamed: 9": 2021,
-            "Unnamed: 10": 2022
+            "2013": 2013,
+            "2014": 2014,
+            "2015": 2015,
+            "2016": 2016,
+            "2017": 2017,
+            "2018": 2018,
+            "2019": 2019,
+            "2020": 2020,
+            "2021": 2021,
+            "2022": 2022,
         }
 
         records = []
         for _, row in df_raw.iterrows():
-            name = str(row.get("GEO (Labels)", "")).strip()
+            name = str(row.get("TIME", "")).strip()
             geo = self.country_name_to_code.get(name)
             if not geo:
                 continue
