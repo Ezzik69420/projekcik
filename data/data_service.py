@@ -1,4 +1,5 @@
 from PyQt5.QtCore import QObject, pyqtSignal
+
 class VehicleDataService(QObject):
     dataUpdated = pyqtSignal()
     yearChanged = pyqtSignal(int)
@@ -90,6 +91,4 @@ class VehicleDataService(QObject):
             "SI": "Słowenia",
             "SK": "Słowacja",
             "UK": "Wielka Brytania",
-                                                                  
-                                          
         }
