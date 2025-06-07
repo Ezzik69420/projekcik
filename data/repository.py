@@ -6,12 +6,31 @@ class ExcelVehicleDataRepository:
         # Wczytujemy dane EV. W arkuszu po ośmiu wierszach znajdują się nazwy
         # kolumn z latami (2018, 2019, ...). Kolejny wiersz powtarza nagłówki
         # "GEO (Codes)", dlatego pomijamy go przy wczytywaniu.
-        self.ev_data = pd.read_excel(
+        ev_raw = pd.read_excel(
             ev_path,
             sheet_name="Sheet 3",
             skiprows=8,
             engine="openpyxl",
-        ).iloc[1:]
+        )
+        ev_raw = ev_raw.rename(
+            columns={
+                "TIME": "GEO (Codes)",
+                "TIME.1": "GEO (Labels)",
+                "Unnamed: 3": "_drop1",
+                "Unnamed: 5": "_drop2",
+                "Unnamed: 7": "_drop3",
+                "Unnamed: 9": "_drop4",
+                "Unnamed: 11": "_drop5",
+            }
+        )
+        ev_raw = ev_raw.drop(columns=["_drop1", "_drop2", "_drop3", "_drop4", "_drop5"])\
+            .iloc[1:]
+        self.ev_data = ev_raw
+        self.name_to_code = {
+            str(row["GEO (Labels)"]).strip(): str(row["GEO (Codes)"]).strip()
+            for _, row in self.ev_data.iterrows()
+            if len(str(row["GEO (Codes)"]).strip()) == 2
+        }
 
         self.records = []
         year_columns_ev = {
@@ -44,15 +63,40 @@ class ExcelVehicleDataRepository:
         # 2. ENV data (env_waselvt...)
         # Dane ENV mają podobną strukturę – po ośmiu wierszach znajdują się
         # kolumny z latami, a pierwszy wiersz po nagłówku należy pominąć.
-        self.env_data = (
-            pd.read_excel(
-                env_path,
-                sheet_name="Sheet 1",
-                skiprows=8,
-                engine="openpyxl",
-            )
-            .iloc[1:]
+        env_raw = pd.read_excel(
+            env_path,
+            sheet_name="Sheet 1",
+            skiprows=8,
+            engine="openpyxl",
         )
+        env_raw = env_raw.rename(
+            columns={
+                "TIME": "GEO (Labels)",
+                "Unnamed: 2": "_drop1",
+                "Unnamed: 4": "_drop2",
+                "Unnamed: 6": "_drop3",
+                "Unnamed: 8": "_drop4",
+                "Unnamed: 10": "_drop5",
+                "Unnamed: 12": "_drop6",
+                "Unnamed: 14": "_drop7",
+                "Unnamed: 16": "_drop8",
+                "Unnamed: 18": "_drop9",
+                "Unnamed: 20": "_drop10",
+            }
+        )
+        env_raw = env_raw.drop(columns=[
+            "_drop1",
+            "_drop2",
+            "_drop3",
+            "_drop4",
+            "_drop5",
+            "_drop6",
+            "_drop7",
+            "_drop8",
+            "_drop9",
+            "_drop10",
+        ]).iloc[1:]
+        self.env_data = env_raw
 
         self.env_records = []
         year_columns_env = {
@@ -69,8 +113,9 @@ class ExcelVehicleDataRepository:
         }
 
         for _, row in self.env_data.iterrows():
-            geo = str(row["GEO (Labels)"]).strip()
-            if len(geo) == 2:
+            label = str(row["GEO (Labels)"]).strip()
+            geo = self.name_to_code.get(label)
+            if geo:
                 for col_name, year in year_columns_env.items():
                     val = row.get(col_name)
                     if pd.notna(val):
@@ -79,7 +124,7 @@ class ExcelVehicleDataRepository:
                             self.env_records.append({
                                 "geo": geo,
                                 "TIME_PERIOD": year,
-                                "OBS_VALUE": numeric_val
+                                "OBS_VALUE": numeric_val,
                             })
                         except Exception:
                             continue
