@@ -53,7 +53,10 @@ class ChartView(QWidget):
         self.slider_start.setValue(0)
         self.slider_start.setTickInterval(1)
         self.slider_start.setTickPosition(QSlider.TicksBelow)
+        # Aktualizujemy etykietę na bieżąco, a wykres
+        # odświeżamy dopiero po puszczeniu suwaka.
         self.slider_start.valueChanged.connect(self.on_start_changed)
+        self.slider_start.sliderReleased.connect(self.redraw_chart)
 
         # Suwak końcowego roku
         self.label_end = QLabel(f"Do roku: {self.end_year}")
@@ -64,6 +67,7 @@ class ChartView(QWidget):
         self.slider_end.setTickInterval(1)
         self.slider_end.setTickPosition(QSlider.TicksBelow)
         self.slider_end.valueChanged.connect(self.on_end_changed)
+        self.slider_end.sliderReleased.connect(self.redraw_chart)
 
         sliders_layout.addWidget(self.label_start)
         sliders_layout.addWidget(self.slider_start)
@@ -104,7 +108,6 @@ class ChartView(QWidget):
             return
         self.start_year = year
         self.label_start.setText(f"Od roku: {self.start_year}")
-        self.redraw_chart()
 
     def on_end_changed(self, index: int):
         """
@@ -117,7 +120,6 @@ class ChartView(QWidget):
             return
         self.end_year = year
         self.label_end.setText(f"Do roku: {self.end_year}")
-        self.redraw_chart()
 
     def update_countries(self, countries: list):
         """
