@@ -24,6 +24,7 @@ class ElectricVehiclesMapTab(QWidget):
 
         # 2) Wczytujemy geometrię regionów (NUTS2)
         self.map_data = self.load_map_data()
+        self._complete_ev_data()
 
         # ------------------------
         # Przygotowanie interfejsu Qt
@@ -114,6 +115,33 @@ class ElectricVehiclesMapTab(QWidget):
         gdf = gdf[gdf["LEVL_CODE"] == 2]  # NUTS2
         gdf = gdf[["NUTS_ID", "geometry"]].copy()
         return gdf.rename(columns={"NUTS_ID": "geo"})
+
+    def _complete_ev_data(self) -> None:
+        """Replicate dane NUTS1 na wszystkie odpowiadaj\u0105ce im regiony NUTS2."""
+        nuts1_to_nuts2 = {}
+        for geo in self.map_data["geo"]:
+            prefix = geo[:3] if not geo.startswith("FRY") else "FRY"
+            nuts1_to_nuts2.setdefault(prefix, set()).add(geo)
+
+        new_rows = []
+        df = self.ev_data
+        for prefix, group in df[df["geo"].str.len() == 3].groupby("geo"):
+            if prefix in nuts1_to_nuts2:
+                has_nuts2 = any(df["geo"].str.startswith(prefix) & (df["geo"].str.len() == 4))
+                if not has_nuts2:
+                    for _, row in group.iterrows():
+                        for geo in nuts1_to_nuts2[prefix]:
+                            new_rows.append({
+                                "geo": geo,
+                                "name": row["name"],
+                                "year": row["year"],
+                                "value": row["value"],
+                            })
+
+        if new_rows:
+            self.ev_data = pd.concat([self.ev_data, pd.DataFrame(new_rows)], ignore_index=True)
+        # Usuwamy dane NUTS1
+        self.ev_data = self.ev_data[self.ev_data["geo"].str.len() == 4]
 
     def render_map(self):
         df_range = self.ev_data[
