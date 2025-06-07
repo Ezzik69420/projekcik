@@ -206,10 +206,11 @@ class ElectricVehiclesMapTab(QWidget):
                 title=f"Średni udział ({self.start_year}–{self.end_year})",
                 x=1.02,
                 len=0.75,
-                thickness=15
+                thickness=15,
+                ticksuffix="%"
             )
         ))
-        fig.update_traces(hovertemplate="%{text}<br>%{z}<extra></extra>")
+        fig.update_traces(hovertemplate="%{text}<br>%{z}%<extra></extra>")
 
         if self.region_mode == "PL":
             minx, miny, maxx, maxy = merged.geometry.total_bounds
