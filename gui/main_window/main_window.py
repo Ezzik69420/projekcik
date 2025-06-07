@@ -6,7 +6,6 @@ from common.config import Config
 from gui.map_view.electric_vehicles_map_tab import ElectricVehiclesMapTab
 from gui.map_view.electric_vehicles_countries_tab import ElectricVehiclesCountriesTab
 from gui.chart_view.chart_view import ChartView                                         
-from gui.country_list_widget.country_list_widget import CountryListWidget
 class MainWindow(QMainWindow):
     def __init__(self, service, exporter=None):
         super().__init__()

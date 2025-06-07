@@ -11,7 +11,7 @@ def main():
     os.environ["QT_QUICK_BACKEND"] = "software"
     app = QApplication(sys.argv)
     config = Config()
-    repository = ExcelVehicleDataRepository(config.ev_data_path, config.env_data_path)
+    repository = ExcelVehicleDataRepository(config.ev_data_path)
     service = VehicleDataService(repository)
     exporter = PDFExportStrategy()
     window = MainWindow(service, exporter)
