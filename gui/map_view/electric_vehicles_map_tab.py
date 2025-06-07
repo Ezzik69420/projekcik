@@ -10,6 +10,8 @@ import tempfile
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
+from gui.region_switch.region_switch import RegionSwitch
+
 
 class ElectricVehiclesMapTab(QWidget):
     def __init__(self, data_path: str):
@@ -25,12 +27,16 @@ class ElectricVehiclesMapTab(QWidget):
         # 2) Wczytujemy geometrię regionów (NUTS2)
         self.map_data = self.load_map_data()
         self._complete_ev_data()
+        self.region_mode = "EU"
 
         # ------------------------
         # Przygotowanie interfejsu Qt
         # ------------------------
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
+
+        self.region_switch = RegionSwitch(self.on_region_changed)
+        self.layout.addWidget(self.region_switch)
 
         sliders_layout = QHBoxLayout()
 
@@ -81,6 +87,10 @@ class ElectricVehiclesMapTab(QWidget):
             return
         self.end_year = year
         self.label_end.setText(f"Do roku: {self.end_year}")
+        self.render_map()
+
+    def on_region_changed(self, mode: str):
+        self.region_mode = mode
         self.render_map()
 
     def load_ev_data(self, data_path: str) -> pd.DataFrame:
@@ -168,6 +178,8 @@ class ElectricVehiclesMapTab(QWidget):
         )
 
         merged = self.map_data.merge(cum_ev, on="geo", how="left")
+        if self.region_mode == "PL":
+            merged = merged[merged["geo"].str.startswith("PL")]
         merged = merged[merged["cumulative_ev"].notna()]
 
         if merged.empty or merged.geometry.isnull().all():
@@ -190,16 +202,30 @@ class ElectricVehiclesMapTab(QWidget):
             )
         ))
 
-        fig.update_geos(
-            projection_type="mercator",
-            fitbounds="locations",
-            lataxis_range=[34, 72],
-            lonaxis_range=[-25, 45],
-            visible=True
-        )
+        if self.region_mode == "PL":
+            minx, miny, maxx, maxy = merged.geometry.total_bounds
+            margin = 1
+            lat_range = [miny - margin, maxy + margin]
+            lon_range = [minx - margin, maxx + margin]
+            fig.update_geos(
+                projection_type="mercator",
+                fitbounds="locations",
+                lataxis_range=lat_range,
+                lonaxis_range=lon_range,
+                visible=True
+            )
+        else:
+            fig.update_geos(
+                projection_type="mercator",
+                fitbounds="locations",
+                lataxis_range=[34, 72],
+                lonaxis_range=[-25, 45],
+                visible=True
+            )
 
+        title_region = "Polska" if self.region_mode == "PL" else "Regiony NUTS2"
         fig.update_layout(
-            title=f"Pojazdy elektryczne – Regiony NUTS2 ({self.start_year}–{self.end_year})",
+            title=f"Pojazdy elektryczne – {title_region} ({self.start_year}–{self.end_year})",
             margin={"r": 0, "t": 50, "l": 0, "b": 0},
             height=800,
             width=1200
