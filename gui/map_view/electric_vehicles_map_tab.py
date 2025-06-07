@@ -84,14 +84,31 @@ class ElectricVehiclesMapTab(QWidget):
         self.render_map()
 
     def load_ev_data(self, data_path: str) -> pd.DataFrame:
-        df_raw = pd.read_excel(data_path, sheet_name="Sheet 3", skiprows=9, engine="openpyxl")
+        """Wczytuje arkusz z danymi EV i zwraca dane w formie ``DataFrame``.
+
+        W pliku pierwszych osiem wierszy to opis zestawu. Dziewiąty wiersz
+        zawiera nagłówki: ``GEO (Codes)``, ``GEO (Labels)`` oraz kolumny lat
+        od 2018 do 2022. Kolejny wiersz powtarza nagłówki i jest pomijany.
+        """
+
+        df_raw = pd.read_excel(
+            data_path,
+            sheet_name="Sheet 3",
+            skiprows=8,
+            engine="openpyxl",
+        )
+        df_raw.rename(
+            columns={"TIME": "GEO (Codes)", "TIME.1": "GEO (Labels)"},
+            inplace=True,
+        )
+        df_raw = df_raw.iloc[1:]
 
         year_columns = {
-            "Unnamed: 1": 2018,
-            "Unnamed: 2": 2019,
-            "Unnamed: 3": 2020,
-            "Unnamed: 4": 2021,
-            "Unnamed: 5": 2022
+            "2018": 2018,
+            "2019": 2019,
+            "2020": 2020,
+            "2021": 2021,
+            "2022": 2022,
         }
 
         records = []
