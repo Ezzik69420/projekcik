@@ -1,4 +1,4 @@
-# gui/main_window/main_window.py
+                                
 
 from PyQt5.QtWidgets import (
     QMainWindow, QTabWidget, QWidget, QVBoxLayout,
@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
 from common.config import Config
 from gui.map_view.electric_vehicles_map_tab import ElectricVehiclesMapTab
 from gui.map_view.electric_vehicles_countries_tab import ElectricVehiclesCountriesTab
-from gui.chart_view.chart_view import ChartView  # zmodyfikowana wersja z dwoma suwakami
+from gui.chart_view.chart_view import ChartView                                         
 from gui.country_list_widget.country_list_widget import CountryListWidget
 
 class MainWindow(QMainWindow):
@@ -31,14 +31,14 @@ class MainWindow(QMainWindow):
     def init_tabs(self, region_csv, country_xlsx):
         print("✅ init_tabs start")
 
-        # ---------------------------------
-        # 1) Zakładka „Mapa EV – regiony”
-        # ---------------------------------
+                                           
+                                         
+                                           
         try:
             ev_map_widget = QWidget()
             ev_map_layout = QVBoxLayout()
 
-            # ElectricVehiclesMapTab już wewnątrz tworzy dwa suwaki
+                                                                   
             self.ev_map_tab = ElectricVehiclesMapTab(region_csv)
             ev_map_layout.addWidget(self.ev_map_tab)
 
@@ -47,14 +47,14 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f"❌ Błąd przy ev_map_tab: {e}")
 
-        # ---------------------------------
-        # 2) Zakładka „Mapa EV – kraje”
-        # ---------------------------------
+                                           
+                                       
+                                           
         try:
             ev_countries_widget = QWidget()
             ev_countries_layout = QVBoxLayout()
 
-            # ElectricVehiclesCountriesTab również tworzy dwa suwaki
+                                                                    
             self.ev_countries_tab = ElectricVehiclesCountriesTab(country_xlsx)
             ev_countries_layout.addWidget(self.ev_countries_tab)
 
@@ -63,17 +63,17 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f"❌ Błąd przy ev_countries_tab: {e}")
 
-        # ---------------------------------
-        # 3) Zakładka „Porównanie krajów”
-        # ---------------------------------
+                                           
+                                         
+                                           
         try:
             chart_tab = QWidget()
             layout = QVBoxLayout()
 
-            # ChartView zmieniony tak, aby miał dwa suwaki
+                                                          
             self.chart_view = ChartView(self.service)
-            # Na razie CountryListWidget umieszczamy wewnątrz ChartView,
-            # bo to wygodniej (zobacz ChartView.py).
+                                                                        
+                                                    
 
             layout.addWidget(self.chart_view)
 
