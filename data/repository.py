@@ -3,15 +3,23 @@ import pandas as pd
 class ExcelVehicleDataRepository:
     def __init__(self, ev_path: str, env_path: str):
         # 1. EV data (tran_r_elvehst...)
-        self.ev_data = pd.read_excel(ev_path, sheet_name="Sheet 3", skiprows=9, engine="openpyxl")
+        # Wczytujemy dane EV. W arkuszu po ośmiu wierszach znajdują się nazwy
+        # kolumn z latami (2018, 2019, ...). Kolejny wiersz powtarza nagłówki
+        # "GEO (Codes)", dlatego pomijamy go przy wczytywaniu.
+        self.ev_data = pd.read_excel(
+            ev_path,
+            sheet_name="Sheet 3",
+            skiprows=8,
+            engine="openpyxl",
+        ).iloc[1:]
 
         self.records = []
         year_columns_ev = {
-            "Unnamed: 1": 2018,
-            "Unnamed: 2": 2019,
-            "Unnamed: 3": 2020,
-            "Unnamed: 4": 2021,
-            "Unnamed: 5": 2022
+            "2018": 2018,
+            "2019": 2019,
+            "2020": 2020,
+            "2021": 2021,
+            "2022": 2022,
         }
 
         for _, row in self.ev_data.iterrows():
@@ -34,20 +42,30 @@ class ExcelVehicleDataRepository:
         self.df = pd.DataFrame(self.records)
 
         # 2. ENV data (env_waselvt...)
-        self.env_data = pd.read_excel(env_path, sheet_name="Sheet 1", skiprows=9, engine="openpyxl")
+        # Dane ENV mają podobną strukturę – po ośmiu wierszach znajdują się
+        # kolumny z latami, a pierwszy wiersz po nagłówku należy pominąć.
+        self.env_data = (
+            pd.read_excel(
+                env_path,
+                sheet_name="Sheet 1",
+                skiprows=8,
+                engine="openpyxl",
+            )
+            .iloc[1:]
+        )
 
         self.env_records = []
         year_columns_env = {
-            "Unnamed: 1": 2013,
-            "Unnamed: 2": 2014,
-            "Unnamed: 3": 2015,
-            "Unnamed: 4": 2016,
-            "Unnamed: 5": 2017,
-            "Unnamed: 6": 2018,
-            "Unnamed: 7": 2019,
-            "Unnamed: 8": 2020,
-            "Unnamed: 9": 2021,
-            "Unnamed: 10": 2022
+            "2013": 2013,
+            "2014": 2014,
+            "2015": 2015,
+            "2016": 2016,
+            "2017": 2017,
+            "2018": 2018,
+            "2019": 2019,
+            "2020": 2020,
+            "2021": 2021,
+            "2022": 2022,
         }
 
         for _, row in self.env_data.iterrows():
